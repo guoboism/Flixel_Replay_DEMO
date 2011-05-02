@@ -8,10 +8,10 @@ package
 	{
 		
 		//===========embed resources===========
-		[Embed(source='../asst/autoChange.png')]
+		[Embed(source='./asst/autoChange.png')]
 		private var img_autoChange:Class;
 		
-		[Embed(source = '../asst/simpleMap.csv', mimeType = 'application/octet-stream')]
+		[Embed(source = './asst/simpleMap.csv', mimeType = 'application/octet-stream')]
 		private var map_simple:Class;
 		
 		//===========declare UI stuff===========
@@ -58,14 +58,14 @@ package
 			
 			//Set up UI
 			//Add timer text
-			replayText = new FlxText(180, 0, 200, "");
-			replayText.size = 16;
+			replayText = new FlxText(300, 0, 200);
+			replayText.size = 12;
 			add(replayText);
 			
 			//Add hint text;
-			hintText =  new FlxText(50, 280, 350, "Press R to display replay and wait until it finishes.");
+			hintText =  new FlxText(0, 282, 350);
 			hintText.color = 0xFF000000;
-			hintText.size = 10;
+			hintText.size = 12;
 			add(hintText);
 			
 			//Add quit btn
@@ -102,6 +102,7 @@ package
 				replay.recordFrame();
 				replayText.color = 0xFFBD1A1E;
 				replayText.text = "R : " + replay.frameCount;
+				hintText.text = "Recording. Arrow keys : move. 'R' : replay."
 			}else{
 				replay.playNextFrame();
 				replayText.color = 0xFF0080FF;
@@ -109,6 +110,7 @@ package
 				if (replay.finished) {
 					start_record();
 				}
+				hintText.text = "Replaying. Press wait until it finishes."
 			}
 		}
 		
@@ -130,7 +132,7 @@ package
 			thePlayer.alpha = 0.6;
 		}
 		
-		private function onQuit() {
+		private function onQuit():void {
 			FlxG.switchState(new MenuState);
 		}
 	}
