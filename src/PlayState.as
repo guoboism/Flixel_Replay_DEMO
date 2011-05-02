@@ -1,6 +1,5 @@
 package
 {
-	import flash.geom.Point;
 	import org.flixel.*;
 	import org.flixel.system.FlxReplay;
 
@@ -8,7 +7,7 @@ package
 	{
 		
 		//===========embed resources===========
-		[Embed(source='./asst/autoChange.png')]
+		[Embed(source='./asst/tiles.png')]
 		private var img_autoChange:Class;
 		
 		[Embed(source = './asst/simpleMap.csv', mimeType = 'application/octet-stream')]
@@ -20,16 +19,29 @@ package
 		private var replayText:FlxText;
 		
 		private var  btnQuit:FlxButton;
+		
 		//===========declare others===========
 		private var simpleTilemap:FlxTilemap;
 		
+		/**
+		 * the blue block player controls
+		 */
 		private var thePlayer:FlxSprite;
 		
 		//===========declare stuff around replay===========
-		private var replay:FlxReplay = new FlxReplay();
+		/**
+		 * This is the main class for replay
+		 */
+		private var replay:FlxReplay;
 		
+		/**
+		 * We use this to tell which mode we are at, recording or replaying
+		 */
 		private var isRecording:Boolean = true;
 		
+		/**
+		 * Record down the position of player when record is started
+		 */
 		private var playerPosWhenRecordStart:FlxPoint = new FlxPoint();
 		
 		override public function create():void
@@ -54,7 +66,8 @@ package
 			add(thePlayer);
 			
 			//Set up stuff around replay
-			start_record();
+			replay = new FlxReplay();//create the instance, but it still needs initializtion by create(); 
+			start_record();//set to record mode
 			
 			//Set up UI
 			//Add timer text
@@ -92,19 +105,37 @@ package
 				thePlayer.velocity.y = -200;
 			}
 			
+			/**
+			 * Notice that I add "&&isRecording", because recording will recording every input
+			 * so R key for replay will also be recorded at recording and
+			 * be triggered at replaying
+			 * Please pay attention to the inputs that are not supposed to be recorded
+			 */
 			if (FlxG.keys.justPressed("R") && isRecording) {
 				start_play();
 			}
 			
 			super.update();
 			
+			/**
+			 * In fact, recording is just remembering all the inputs(keyboard and mouse) at every frame.
+			 * When replay, it reads the inputs at each frame and artificially trigger that input
+			 * and let your input handler (the logic above this comment in thsi case) to handle it
+			 * When recording, call replay.recordFrame() at eachframe
+			 * when replaying, call replay.playNextFrame()
+			 */
+			
 			if (isRecording) {
 				replay.recordFrame();
+				
+				//set color to dark red
 				replayText.color = 0xFFBD1A1E;
 				replayText.text = "R : " + replay.frameCount;
 				hintText.text = "Recording. Arrow keys : move. 'R' : replay."
 			}else{
 				replay.playNextFrame();
+				
+				//set color ro blue
 				replayText.color = 0xFF0080FF;
 				replayText.text = "P : " + replay.frame +"/" + replay.frameCount;
 				if (replay.finished) {
@@ -117,18 +148,28 @@ package
 		private function start_record():void {
 			isRecording = true;
 			
+			//record player's position
 			playerPosWhenRecordStart.x = thePlayer.x;
 			playerPosWhenRecordStart.y = thePlayer.y;
+			
+			/**
+			 * we use this to "reinit" a FlxReplay, 
+			 * otherwise new recording will be added after the old
+			 * NOTE i created a randon number as the Seed, which serves as identifer
+			 */
 			replay.create(Math.random());
+			
 			thePlayer.alpha = 1;
 		}
 		
 		private function start_play() :void {
 			isRecording = false; 
 			
+			//reset player's position to where it was when record started
 			thePlayer.x = playerPosWhenRecordStart.x;
 			thePlayer.y = playerPosWhenRecordStart.y;
-			replay.rewind();
+			
+			replay.rewind();//this put the "playhead back to start", so that we play it from start
 			thePlayer.alpha = 0.6;
 		}
 		
