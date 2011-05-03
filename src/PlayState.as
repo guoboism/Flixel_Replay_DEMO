@@ -1,5 +1,6 @@
 package
 {
+	import flash.ui.Mouse;
 	import org.flixel.*;
 	import org.flixel.system.FlxReplay;
 
@@ -28,6 +29,11 @@ package
 		 */
 		private var thePlayer:FlxSprite;
 		
+		/**
+		 * the red block represents mouse
+		 */
+		private var theCursor:FlxSprite;
+		
 		//===========declare stuff around replay===========
 		/**
 		 * This is the main class for replay
@@ -39,10 +45,12 @@ package
 		 */
 		private var isRecording:Boolean = true;
 		
-		/**
-		 * Record down the position of player when record is started
+		/*
+		 * Record down the position, velocity and acceleration of player when record is started
 		 */
 		private var playerPosWhenRecordStart:FlxPoint = new FlxPoint();
+		private var playerVeloWhenRecordStart:FlxPoint = new FlxPoint();
+		private var playerAccWhenRecordStart:FlxPoint = new FlxPoint();
 		
 		override public function create():void
 		{
@@ -54,6 +62,11 @@ package
 			simpleTilemap.loadMap(new map_simple,img_autoChange,25,25,FlxTilemap.AUTO);
 			add(simpleTilemap);
 			simpleTilemap.y -= 25;
+			
+			//Set up the cursor
+			theCursor = new FlxSprite().makeGraphic(6, 6, 0xFFFF0000);
+			add(theCursor);
+			
 			
 			//Set up the Player
 			thePlayer = new FlxSprite().makeGraphic(12, 12, 0xFF8CF1FF);
@@ -111,7 +124,8 @@ package
 			 * be triggered at replaying
 			 * Please pay attention to the inputs that are not supposed to be recorded
 			 */
-			if (FlxG.keys.justPressed("R") && isRecording) {
+			if (FlxG.keys.justPressed("R") && isRecording)
+			{
 				start_play();
 			}
 			
@@ -125,14 +139,21 @@ package
 			 * when replaying, call replay.playNextFrame()
 			 */
 			
-			if (isRecording) {
+			if (isRecording) 
+			{
 				replay.recordFrame();
 				
 				//set color to dark red
 				replayText.color = 0xFFBD1A1E;
 				replayText.text = "R : " + replay.frameCount;
 				hintText.text = "Recording. Arrow keys : move. 'R' : replay."
-			}else{
+				
+				FlxG.mouse.show();
+				theCursor.visible = false;
+			}
+			else 
+			{
+
 				replay.playNextFrame();
 				
 				//set color ro blue
@@ -142,7 +163,22 @@ package
 					start_record();
 				}
 				hintText.text = "Replaying. Press wait until it finishes."
+				
+				//hide cursor
+				theCursor.visible = true;
+				FlxG.mouse.hide();
+				
+				//let red block be larger when detect mouse click
+				theCursor.scale = new FlxPoint(1, 1);
+				if (FlxG.mouse.pressed()) {
+					theCursor.scale = new FlxPoint(2, 2);
+				}
+				theCursor.x = FlxG.mouse.screenX;
+				theCursor.y = FlxG.mouse.screenY;
+				
 			}
+			
+			
 		}
 		
 		private function start_record():void {
@@ -151,7 +187,10 @@ package
 			//record player's position
 			playerPosWhenRecordStart.x = thePlayer.x;
 			playerPosWhenRecordStart.y = thePlayer.y;
-			
+			playerVeloWhenRecordStart.x = thePlayer.velocity.x;
+			playerVeloWhenRecordStart.y = thePlayer.velocity.y;
+			playerAccWhenRecordStart.x = thePlayer.acceleration.x;
+			playerAccWhenRecordStart.y = thePlayer.acceleration.y;
 			/**
 			 * we use this to "reinit" a FlxReplay, 
 			 * otherwise new recording will be added after the old
@@ -168,6 +207,10 @@ package
 			//reset player's position to where it was when record started
 			thePlayer.x = playerPosWhenRecordStart.x;
 			thePlayer.y = playerPosWhenRecordStart.y;
+			thePlayer.velocity.x = playerVeloWhenRecordStart.x;
+			thePlayer.velocity.y = playerVeloWhenRecordStart.y;
+			thePlayer.acceleration.x = playerAccWhenRecordStart.x;
+			thePlayer.acceleration.y = playerAccWhenRecordStart.y;
 			
 			replay.rewind();//this put the "playhead back to start", so that we play it from start
 			thePlayer.alpha = 0.6;
