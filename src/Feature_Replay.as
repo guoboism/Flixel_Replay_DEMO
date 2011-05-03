@@ -8,7 +8,7 @@ package
 	{
 		public function Feature_Replay()
 		{
-			super(400,300,MenuState,1,20,20);
+			super(400, 300, MenuState, 1, 20, 20);
 		}
 	}
 }

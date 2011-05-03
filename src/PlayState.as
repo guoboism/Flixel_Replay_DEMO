@@ -17,10 +17,6 @@ package
 		//===========declare UI stuff===========
 		private var hintText:FlxText;
 		
-		private var replayText:FlxText;
-		
-		private var  btnQuit:FlxButton;
-		
 		//===========declare others===========
 		private var simpleTilemap:FlxTilemap;
 		
@@ -35,38 +31,28 @@ package
 		private var theCursor:FlxSprite;
 		
 		//===========declare stuff around replay===========
-		/**
-		 * This is the main class for replay
-		 */
-		private var replay:FlxReplay;
-		
-		/**
-		 * We use this to tell which mode we are at, recording or replaying
-		 */
-		private var isRecording:Boolean = true;
-		
 		/*
-		 * Record down the position, velocity and acceleration of player when record is started
+		 * We use these to tell which mode we are at, recording or replaying
 		 */
-		private var playerPosWhenRecordStart:FlxPoint = new FlxPoint();
-		private var playerVeloWhenRecordStart:FlxPoint = new FlxPoint();
-		private var playerAccWhenRecordStart:FlxPoint = new FlxPoint();
+		private static var recording:Boolean =false;
+		private static var replaying:Boolean =false;
+		
 		
 		override public function create():void
 		{
 			FlxG.framerate = 60;
 			FlxG.flashFramerate = 60;
+			FlxG.mouse.hide();
 			
 			//Set up the TILEMAP
 			simpleTilemap = new FlxTilemap();
 			simpleTilemap.loadMap(new map_simple,img_autoChange,25,25,FlxTilemap.AUTO);
 			add(simpleTilemap);
-			simpleTilemap.y -= 25;
+			simpleTilemap.y -= 15;
 			
 			//Set up the cursor
 			theCursor = new FlxSprite().makeGraphic(6, 6, 0xFFFF0000);
 			add(theCursor);
-			
 			
 			//Set up the Player
 			thePlayer = new FlxSprite().makeGraphic(12, 12, 0xFF8CF1FF);
@@ -78,25 +64,14 @@ package
 			thePlayer.y = 200
 			add(thePlayer);
 			
-			//Set up stuff around replay
-			replay = new FlxReplay();//create the instance, but it still needs initializtion by create(); 
-			start_record();//set to record mode
-			
 			//Set up UI
-			//Add timer text
-			replayText = new FlxText(300, 0, 200);
-			replayText.size = 12;
-			add(replayText);
-			
-			//Add hint text;
-			hintText =  new FlxText(0, 282, 350);
+			hintText =  new FlxText(0, 268, 400);
 			hintText.color = 0xFF000000;
 			hintText.size = 12;
 			add(hintText);
 			
-			//Add quit btn
-			btnQuit = new FlxButton(0, 0, "QUIT", onQuit);
-			add(btnQuit);
+			//adjust things according to different modes
+			init();
 		}
 		
 		override public function update():void
@@ -118,106 +93,73 @@ package
 				thePlayer.velocity.y = -200;
 			}
 			
+			if(!PlayState.recording && !PlayState.replaying){
+				start_record();
+			}
+			
 			/**
-			 * Notice that I add "&&isRecording", because recording will recording every input
-			 * so R key for replay will also be recorded at recording and
+			 * Notice that I add "&&recording", because recording will recording every input
+			 * so R key for replay will also be recorded and
 			 * be triggered at replaying
 			 * Please pay attention to the inputs that are not supposed to be recorded
 			 */
-			if (FlxG.keys.justPressed("R") && isRecording)
+			if (FlxG.keys.justPressed("R") && PlayState.recording)
 			{
 				start_play();
 			}
 			
 			super.update();
 			
-			/**
-			 * In fact, recording is just remembering all the inputs(keyboard and mouse) at every frame.
-			 * When replay, it reads the inputs at each frame and artificially trigger that input
-			 * and let your input handler (the logic above this comment in thsi case) to handle it
-			 * When recording, call replay.recordFrame() at eachframe
-			 * when replaying, call replay.playNextFrame()
-			 */
-			
-			if (isRecording) 
-			{
-				replay.recordFrame();
-				
-				//set color to dark red
-				replayText.color = 0xFFBD1A1E;
-				replayText.text = "R : " + replay.frameCount;
-				hintText.text = "Recording. Arrow keys : move. 'R' : replay."
-				
-				FlxG.mouse.show();
-				theCursor.visible = false;
+			//Update the red block cursor
+			theCursor.scale = new FlxPoint(1, 1);
+			if (FlxG.mouse.pressed()) {
+				theCursor.scale = new FlxPoint(2, 2);
 			}
-			else 
-			{
-
-				replay.playNextFrame();
-				
-				//set color ro blue
-				replayText.color = 0xFF0080FF;
-				replayText.text = "P : " + replay.frame +"/" + replay.frameCount;
-				if (replay.finished) {
-					start_record();
-				}
-				hintText.text = "Replaying. Press wait until it finishes."
-				
-				//hide cursor
-				theCursor.visible = true;
-				FlxG.mouse.hide();
-				
-				//let red block be larger when detect mouse click
-				theCursor.scale = new FlxPoint(1, 1);
-				if (FlxG.mouse.pressed()) {
-					theCursor.scale = new FlxPoint(2, 2);
-				}
-				theCursor.x = FlxG.mouse.screenX;
-				theCursor.y = FlxG.mouse.screenY;
-				
+			theCursor.x = FlxG.mouse.screenX;
+			theCursor.y = FlxG.mouse.screenY;
+			
+		}
+		
+		/**
+		 * I use this funtion to do the init differs from recording to replaying
+		 */
+		private function init():void{
+			if (PlayState.recording) {
+				thePlayer.alpha = 1;
+				theCursor.alpha = 1;
+				hintText.text ="Recording: Arrow Keys : move, X : jump, R : replay\nMouse move and click will also be recorded"
+			}else if (PlayState.replaying) {
+				thePlayer.alpha = 0.5;
+				theCursor.alpha = 0.5;
+				hintText.text ="Replaying: Press mouse button to stop and record again"
 			}
-			
-			
 		}
 		
 		private function start_record():void {
-			isRecording = true;
+			PlayState.recording = true;
+			PlayState.replaying = false;
 			
-			//record player's position
-			playerPosWhenRecordStart.x = thePlayer.x;
-			playerPosWhenRecordStart.y = thePlayer.y;
-			playerVeloWhenRecordStart.x = thePlayer.velocity.x;
-			playerVeloWhenRecordStart.y = thePlayer.velocity.y;
-			playerAccWhenRecordStart.x = thePlayer.acceleration.x;
-			playerAccWhenRecordStart.y = thePlayer.acceleration.y;
-			/**
-			 * we use this to "reinit" a FlxReplay, 
-			 * otherwise new recording will be added after the old
-			 * NOTE i created a randon number as the Seed, which serves as identifer
+			/*
+			 *Note FlxG.recordReplay will restart the game or state
+			 *This function will trigger a flag in FlxGame
+			 *and let the internal FlxReplay to record input on every frame
 			 */
-			replay.create(Math.random());
-			
-			thePlayer.alpha = 1;
+			FlxG.recordReplay(false);
 		}
 		
 		private function start_play() :void {
-			isRecording = false; 
+			PlayState.replaying = true;
+			PlayState.recording = false;
 			
-			//reset player's position to where it was when record started
-			thePlayer.x = playerPosWhenRecordStart.x;
-			thePlayer.y = playerPosWhenRecordStart.y;
-			thePlayer.velocity.x = playerVeloWhenRecordStart.x;
-			thePlayer.velocity.y = playerVeloWhenRecordStart.y;
-			thePlayer.acceleration.x = playerAccWhenRecordStart.x;
-			thePlayer.acceleration.y = playerAccWhenRecordStart.y;
+			/*
+			 * Here we get a string from stopRecoding()
+			 * which records all the input during recording
+			 * Then we load the save
+			 */
 			
-			replay.rewind();//this put the "playhead back to start", so that we play it from start
-			thePlayer.alpha = 0.6;
-		}
-		
-		private function onQuit():void {
-			FlxG.switchState(new MenuState);
+			var save:String = FlxG.stopRecording();
+			//trace(save);
+			FlxG.loadReplay(save, new PlayState, ["MOUSE"], 0,start_record);
 		}
 	}
 }
