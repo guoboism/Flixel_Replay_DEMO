@@ -131,7 +131,7 @@ package
 			}else if (PlayState.replaying) {
 				thePlayer.alpha = 0.5;
 				theCursor.alpha = 0.5;
-				hintText.text ="Replaying: Press mouse button to stop and record again"
+				hintText.text ="Replaying: Press any key or mouse button to stop and record again"
 			}
 		}
 		
@@ -159,7 +159,12 @@ package
 			
 			var save:String = FlxG.stopRecording();
 			//trace(save);
-			FlxG.loadReplay(save, new PlayState, ["MOUSE"], 0,start_record);
+			
+			/**
+			 * NOTE "ANY" or other key wont work under debug mode!
+			 */
+			FlxG.loadReplay(save, new PlayState, ["ANY", "MOUSE"], 0, start_record);
+			
 		}
 	}
 }
